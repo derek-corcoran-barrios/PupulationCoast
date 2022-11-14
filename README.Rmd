@@ -1,0 +1,92 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  message = F,
+  error = F,
+  warning = F
+)
+library(terra)
+library(rworldxtra)
+library(tidyterra)
+library(tidyverse)
+```
+
+# PupulationCoast
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+The goal of PupulationCoast is to generate shapefiles to calculate the population density in coastal areas (100 km from the coast) and in the inner areas of the coast
+
+
+```{r Other, include=FALSE}
+data("countriesHigh")
+```
+
+
+```{r WorldBuild, cache = T}
+message("reading world")
+World <- terra::vect(countriesHigh)
+message("Creating new variable")
+World$World <- "Yes"
+message("Selecting only that new variable")
+World <- World[,"World"]
+
+message("Make valid")
+
+World <- terra::makeValid(World)
+message("Aggregating")
+World <- terra::aggregate(World, by = "World", cores = 3)
+message("Filling holes")
+World <- terra::fillHoles(World) %>% 
+  terra::project("+proj=moll")
+message("Maxing valid again")
+World <- terra::makeValid(World)
+message("Selecting only that new variable")
+World <- World[,"World"]
+message("Making inner buffer")
+World_Inner <- terra::buffer(World, width = -100000)
+
+World_Inner <- terra::makeValid(World_Inner)
+
+Coastal_World <- erase(World, World_Inner)
+```
+
+```{r Areas, cache = T}
+CoastalArea <- terra::expanse(Coastal_World, unit = "km") %>% sum()
+InnerArea <- terra::expanse(World_Inner, unit = "km") %>% sum()
+WorldArea <- terra::expanse(World, unit = "km") %>% sum()
+```
+
+
+
+```{r, cache = T}
+ggplot() + geom_spatvector(data = World, fill = "green") + theme_bw() + ggtitle("World")
+```
+
+The World area is `r prettyNum(WorldArea, big.mark = ",")` sq km
+
+```{r, cache = T}
+ggplot() + geom_spatvector(data = Coastal_World, fill = "green") + theme_bw() + ggtitle("Coastal")
+```
+
+The Costal area is `r prettyNum(CoastalArea, big.mark = ",")` sq km, that is  `r round(((CoastalArea/WorldArea)*100), 2)` percent of the world
+
+```{r, cache = T}
+ggplot() + geom_spatvector(data = World_Inner, fill = "green") + theme_bw() + ggtitle("Inner")
+```
+
+The Inner area is `r prettyNum(InnerArea, big.mark = ",")`, that is  `r round(((InnerArea/WorldArea)*100), 2)` percent of the workd
+
+```{r, eval = F}
+terra::writeVector(World_Inner, "WorldInner.shp")
+terra::writeVector(Coastal_World, "CoastalWorld.shp")
+```
+
