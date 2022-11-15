@@ -21,6 +21,7 @@ data("countriesHigh")
 
 
 ```{r WorldBuild, cache = T}
+
 World <- terra::vect(countriesHigh)
 
 World$World <- "Yes"
@@ -45,9 +46,9 @@ Coastal_World <- erase(World, World_Inner)
 ```
 
 ```{r Areas, cache = T}
-CoastalArea <- terra::expanse(Coastal_World, unit = "km")
-InnerArea <- terra::expanse(World_Inner, unit = "km")
-WorldArea <- terra::expanse(World, unit = "km")
+CoastalArea <- terra::expanse(Coastal_World, unit = "km", transform=F)
+InnerArea <- terra::expanse(World_Inner, unit = "km", transform=F)
+WorldArea <- terra::expanse(World, unit = "km", transform=F)
 ```
 
 
@@ -68,10 +69,10 @@ The Costal area is `r prettyNum(CoastalArea, big.mark = ",")` sq km, that is  `r
 ggplot() + geom_spatvector(data = World_Inner, fill = "green") + theme_bw() + ggtitle("Inner")
 ```
 
-The Inner area is `r prettyNum(InnerArea, big.mark = ",")`, that is  r (terra::expanse(World_Inner, unit = "km")/terra::expanse(World, unit = "km"))*100, 2) percent of the workd
+The Inner area is `r prettyNum(InnerArea, big.mark = ",")`, that is  `r round(((InnerArea/WorldArea)*100), 2)` percent of the world
 
 ```{r, eval = F}
-terra::writeVector(World_Inner, "WorldInner.shp")
-terra::writeVector(Coastal_World, "CoastalWorld.shp")
+terra::writeVector(World_Inner, "WorldInner.shp", overwrite = T)
+terra::writeVector(Coastal_World, "CoastalWorld.shp", overwrite = T)
 ```
 
